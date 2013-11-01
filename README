@@ -2,6 +2,7 @@ This is a perl script to remove old files from directories.
 
 There is a lot of functionality, including:
 
+* user-specified maximum age of file to keep
 * move recursively through directories starting from a user-specified root directory
 * list files that will be removed, without actually removing them
 
