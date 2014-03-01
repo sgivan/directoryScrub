@@ -8,16 +8,17 @@ no warnings "recursion";
 use Cwd;
 use Sys::Hostname qw/ hostname /;
 use Getopt::Std;
-use vars qw/ $opt_d $opt_D $opt_v $opt_L $opt_l $opt_b $opt_a $opt_h $opt_o $opt_x /;
+use vars qw/ $opt_d $opt_D $opt_v $opt_L $opt_l $opt_b $opt_a $opt_h $opt_o $opt_x $opt_e /;
 
 getopts('d:D:vLlbahox');
-my ($dir,$days,$debug,$log,$verbose,$help,$all,$usage,%deletes,$list);
+my ($dir,$days,$debug,$log,$verbose,$help,$all,$usage,%deletes,$list,$empty);
 $debug = 0;
 $log = 0;
 $verbose = 0 || $opt_v;
 $help = 0 || $opt_h;
 $all = 0 || $opt_a;
 $list = $opt_l || $opt_o;
+$empty = $opt_e;
 $usage = "directoryScrub.pl -D <directory name> -d <oldest file to keep, in days> (-x or -l or -o)";
 if ($help) {
 
@@ -34,9 +35,9 @@ Option		Description
 -x		delete files
 -l		display sorted list of files that will be deleted 
 -o		display list of files to be deleted when they are identified 
-     -l waits until the end and sorts the list of file names
-     Neither -o or -l actually deletes the files, invoking either just lists files
-
+        -l waits until the end and sorts the list of file names
+        Neither -o or -l actually deletes the files, invoking either just lists files
+-e      remove empty files and directories, irrespective of their age
 -L		log information to LOG file called /tmp/scrub.log
 -v		print verbose information to stdout
 -b		debugging output to stdout
