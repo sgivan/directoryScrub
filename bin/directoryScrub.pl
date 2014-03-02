@@ -8,13 +8,13 @@ no warnings "recursion";
 use Cwd;
 use Sys::Hostname qw/ hostname /;
 use Getopt::Std;
-use vars qw/ $opt_d $opt_D $opt_v $opt_L $opt_l $opt_b $opt_a $opt_h $opt_o $opt_x $opt_e /;
+use vars qw/ $opt_d $opt_D $opt_v $opt_L $opt_l $opt_b $opt_a $opt_h $opt_o $opt_x $opt_e $opt_z /;
 
-getopts('d:D:vLlbahox');
+getopts('d:D:vLlbahoxz');
 my ($dir,$days,$debug,$log,$verbose,$help,$all,$usage,%deletes,$list,$empty);
-$debug = 0;
+$debug = 0 || $opt_z;
 $log = 0;
-$verbose = 0 || $opt_v;
+$verbose = 0 || $opt_v || $opt_z;
 $help = 0 || $opt_h;
 $all = 0 || $opt_a;
 $list = $opt_l || $opt_o;
@@ -148,39 +148,56 @@ sub deleteLoop {
 
   foreach my $file (@$files) {
  #   next unless (-r $file && -w $file);
+    my $ldir = cwd();
+    print "file '($ldir) $dir/$file'\n" if ($debug);
     next if ($file eq '..' || $file eq '.' || (!$all && $file eq 'CVS'));
+    print "checking if file is a symlink\n" if ($debug);
     next if (-l $file); # don't follow symbolic links
-    next unless (-f $file || -d $file);
-    print "checking age of file '$dir/$file'\n" if ($debug);
+    print "making sure this is either a file or directory\n" if ($debug);
+    #next unless (-f $file || -d $file);
+    next unless (-e $file);
+    print "preliminaries finished, now checking age of file '$dir/$file'\n" if ($debug);
 
-    eval {
-      if (-M $file > $age) {
-	      print "$dir/$file age is > $age days\n" if ($debug);
-	        if (-f $file) {
-	          print "deleting '$dir/$file'\n" if ($opt_v || $debug);
-	          if (!$debug) {
-	            if (!$list && $opt_x) {
-	              if (unlink($file)) {
-		              print "$dir/$file was deleted successfully\n" if ($opt_v);
-	              } else {
-		              print "$dir/$file was NOT deleted: $@\n" if ($opt_v);
-	              }
-	            } else {
-	              print "f:  '" . cwd() . "/$file'\n" if ($opt_o);
-	              ++$deletes{"f:  " . cwd() . "/$file"} if ($opt_l);
-	            }
-	          }
-	        } elsif (-d $file) {
-        	  print "deleting directory '$dir/$file'\n" if ($opt_v);
-        	  deleteDir("$dir/$file",$age);
-        	  #	deleteDir("$dir" . "/$file");
-        	} else {
-        	  print "'$dir/$file' is not a plain file\n" if ($debug);
-        	}
-      } else {
-	      print "'$dir/$file' is newer than $age days\n" if ($debug);
-      }
-    }; #end of eval {}
+    if ($age) {
+        eval {
+            if ( -M $file > $age ) {
+                print "$dir/$file age is > $age days\n" if ($debug);
+                if ( -f $file ) {
+                    print "deleting '$dir/$file'\n" if ( $verbose || $debug );
+
+                    #if (!$debug) {
+                    if (1) {
+                        if ( !$list && $opt_x ) {
+                            if ( unlink($file) ) {
+                                print "$dir/$file was deleted successfully\n"
+                                  if ($verbose);
+                            }
+                            else {
+                                print "$dir/$file was NOT deleted: $@\n"
+                                  if ($verbose);
+                            }
+                        }
+                        else {
+                            print "f:  '" . cwd() . "/$file'\n" if ($opt_o);
+                            ++$deletes{ "f:  " . cwd() . "/$file" } if ($opt_l);
+                        }
+                    }
+                }
+                elsif ( -d $file ) {
+                    print "deleting directory '$dir/$file'\n" if ($verbose);
+                    deleteDir( "$dir/$file", $age );
+
+                    #	deleteDir("$dir" . "/$file");
+                }
+                else {
+                    print "'$dir/$file' is not a plain file\n" if ($debug);
+                }
+            }
+            else {
+                print "'$dir/$file' is newer than $age days\n" if ($debug);
+            }
+        };    #end of eval statement
+    }
 
     if ($@) {
       print "trouble with file: '$file'\n";
@@ -188,7 +205,7 @@ sub deleteLoop {
     }
 
     deleteDir("$dir/$file",$age) if (-d $file);
-    print "\n\n" if ($debug);
+    print "going back to top of loop\n\n" if ($debug);
   }
 
 
@@ -197,25 +214,37 @@ sub deleteLoop {
 sub deleteDir {
   my $dir = shift;
   my $age = shift;
+  my $deleteDir = 0;
 
   if (!chdir($dir)) {
     die "can't chdir to '$dir': $!";
   }
+
+  $deleteDir = 1 if (-M $dir > $age);
   
-#  print "deleting files inside of directory '$dir'\n" if ($debug || $opt_v);
-  print "checking files inside of directory '$dir'\n" if ($debug || $opt_v);
+  print "checking files inside of directory '$dir'\n" if ($debug || $verbose);
   my $dirfiles = getFileNames($dir);
-#  deleteLoop($dirfiles,0);
   deleteLoop($dirfiles,$age);
   if (!chdir('..')) {
     die "can't chdir out of '$dir': $!";
   }
 
 #  if (!$debug) {
-  if (-M $dir > $age) {
+  # if I check the modification date now, the directory won't
+  # be deleted because I just deleted a file, above. So, the
+  # modification date will be now(). Technically, I've already
+  # checked the date.
+  #if (-M $dir > $age) {
+  if ($deleteDir) {
+#    print "checking files inside of directory '$dir'\n" if ($debug || $verbose);
+#    my $dirfiles = getFileNames($dir);
+#    deleteLoop($dirfiles,$age);
+#    if (!chdir('..')) {
+#        die "can't chdir out of '$dir': $!";
+#    }
     if (!$list && $opt_x) {
       if (!rmdir($dir)) {
-	print "can't remove directory '$dir': $!\n" if ($opt_v || $debug);
+	print "can't remove directory '$dir': $!\n" if ($verbose || $debug);
       } else {
 	print "directory '$dir' deleted\n" if ($debug);
       }
@@ -225,6 +254,5 @@ sub deleteDir {
     }
   }
 
-#  }
 
 }
