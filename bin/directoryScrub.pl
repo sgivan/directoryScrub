@@ -18,7 +18,7 @@ $verbose = 0 || $opt_v || $opt_z;
 $help = 0 || $opt_h;
 $all = 0 || $opt_a;
 $list = $opt_l || $opt_o;
-$empty = $opt_e;
+#$empty = $opt_e;
 $usage = "directoryScrub.pl -D <directory name> -d <oldest file to keep, in days> (-x or -l or -o)";
 if ($help) {
 
@@ -37,7 +37,6 @@ Option		Description
 -o		display list of files to be deleted when they are identified 
         -l waits until the end and sorts the list of file names
         Neither -o or -l actually deletes the files, invoking either just lists files
--e      remove empty files and directories, irrespective of their age
 -L		log information to LOG file called /tmp/scrub.log
 -v		print verbose information to stdout
 -b		debugging output to stdout
