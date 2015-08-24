@@ -6,4 +6,6 @@ There is a lot of functionality, including:
 * move recursively through directories starting from a user-specified root directory
 * list files that will be removed, without actually removing them
 
+To see the full list of options, use the -h flag.
+
 Ccopyright 2013, Scott Givan, sgivan@yahoo.com
